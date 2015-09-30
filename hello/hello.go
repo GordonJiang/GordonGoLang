@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/GordonJiang/stringutil"
+	"github.com/GordonJiang/GordonGoLang/stringutil"
 )
 
 
