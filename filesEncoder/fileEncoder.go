@@ -7,12 +7,14 @@ import (
 	"flag"
 	"crypto/sha256"
 	"io/ioutil"
+	"sync/atomic"
 )
 
 var rootPath = flag.String("path", "/home/Gordon/gocode", "root path to enumerate files")
 var threads = flag.Int("threads", 100, "number of thread pool to encode the file")
 var outputRoot = flag.String("out", "/home/Gordon/out", "root output path for encoded files")
 var filePathCh chan string
+var filesEncoded uint32 = 0
 
 func init(){
 	// initialize the logger
@@ -36,6 +38,8 @@ func main(){
 	for t:=0; t<*threads; t++{
 		<-finish
 	}
+
+	log.Printf("Totally processed %d files", atomic.LoadUint32(&filesEncoded))
 }
 
 func initThreadPool(ch <-chan string, finish chan bool){
@@ -47,11 +51,11 @@ func initThreadPool(ch <-chan string, finish chan bool){
 
 func encoder(id int, ch <-chan string, finish chan bool){
 	//log.Println("Started encoder with id:", id)
-	defer log.Printf("exiting encorder [%d]", id)
+	counter := 0
 	for fullPath := range ch{
 		data, err := ioutil.ReadFile(fullPath);
 		if  err!=nil{
-			log.Fatal(err)
+			log.Fatalf("Failed reading file:%q. Error:%q", fullPath, err)
 			continue
 		}
 		
@@ -61,27 +65,36 @@ func encoder(id int, ch <-chan string, finish chan bool){
 		if err = ioutil.WriteFile(outPath, hashedData[0:],0644); err!=nil{
 			log.Fatal(err)
 		}
+		atomic.AddUint32(&filesEncoded,1)
+		counter++
 		log.Printf("encoder [%d] completed encoding file %q. output is %q.", id, fullPath, outPath)
 	}
 	finish<-true
+	log.Printf("exiting encorder [%d]. This encoder totally encoded %d files", id, counter)
 }
 
 func enumerateFiles(root string, ch chan string) (err error){
 	defer close(filePathCh)
 	
 	// first version - using slow filePath.Walk to enumerate all files/folders
-	
-	return filepath.Walk(root, func (path string, info os.FileInfo, er error) error{
+	err = filepath.Walk(root, func (path string, info os.FileInfo, er error) error{
 		if er !=nil{
 			log.Println("pathWalker error: ",er)
 			return nil
 		}
-		if info.IsDir(){
+		if !info.Mode().IsRegular(){
 			//log.Printf("found directory %q. skip encoding", path)
 			return nil
+		}
+		if path == "/usr/local/man"{
+			log.Printf("found /usr/local/man. Its size:%d. Its Mode:%d",info.Size(), uint32(info.Mode()))
 		}
 		filePathCh<-path
 		//log.Printf("found file %q. Send to encoder", path)
 		return nil
 	})
+	if err!=nil {
+		log.Fatal("Error in enumerating files.", err)
+	}
+	return	
 }
