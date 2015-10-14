@@ -8,6 +8,8 @@ import (
 	"crypto/sha256"
 	"io/ioutil"
 	"sync/atomic"
+	"sync"
+	"runtime"
 )
 
 var rootPath = flag.String("path", "/home/Gordon/gocode", "root path to enumerate files")
@@ -25,32 +27,31 @@ func main(){
 	flag.Parse()
 
 	filePathCh = make(chan string, (*threads) * 2)
-	finish := make(chan bool, *threads)
+	//finish := make(chan bool, *threads)
+	var waitgroup sync.WaitGroup
 
 	// create thread pool
-	initThreadPool(filePathCh, finish)
+	initThreadPool(filePathCh, &waitgroup)
 
 	// kick off the thread enumerating files under directory rootPath
 	enumerateFiles(*rootPath, filePathCh)
 
 	// wait until all files are completed
 	log.Println("Wait until all thread exit")
-	for t:=0; t<*threads; t++{
-		<-finish
-	}
-
+	waitgroup.Wait()
 	log.Printf("Totally processed %d files", atomic.LoadUint32(&filesEncoded))
 }
 
-func initThreadPool(ch <-chan string, finish chan bool){
-	log.Printf("Creating thread pool with %d threads", threads)
+func initThreadPool(ch <-chan string, waitgroup *sync.WaitGroup){
+	log.Printf("Creating thread pool with %d threads", *threads)
 	for i:=0; i<*threads; i++{
-		go encoder(i,ch,finish)
+		waitgroup.Add(1)
+		go encoder(i,ch,waitgroup)
 	}
 }
 
-func encoder(id int, ch <-chan string, finish chan bool){
-	//log.Println("Started encoder with id:", id)
+func encoder(id int, ch <-chan string, wg *sync.WaitGroup){
+	defer wg.Done()
 	counter := 0
 	for fullPath := range ch{
 		data, err := ioutil.ReadFile(fullPath);
@@ -66,10 +67,11 @@ func encoder(id int, ch <-chan string, finish chan bool){
 			log.Fatal(err)
 		}
 		atomic.AddUint32(&filesEncoded,1)
+		runtime.Gosched()
+
 		counter++
-		log.Printf("encoder [%d] completed encoding file %q. output is %q.", id, fullPath, outPath)
+		//log.Printf("encoder [%d] completed encoding file %q. output is %q.", id, fullPath, outPath)
 	}
-	finish<-true
 	log.Printf("exiting encorder [%d]. This encoder totally encoded %d files", id, counter)
 }
 
@@ -96,5 +98,5 @@ func enumerateFiles(root string, ch chan string) (err error){
 	if err!=nil {
 		log.Fatal("Error in enumerating files.", err)
 	}
-	return	
+	return
 }

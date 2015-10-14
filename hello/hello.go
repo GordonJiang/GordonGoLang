@@ -92,6 +92,10 @@ func main(){
 
 	// ticker, timer functions
 	//tickers()
+	
+	// environment variables
+	fmt.Println("GoPath variable value:", os.Getenv("GOPATH"))
+	fmt.Println("All environment variables", os.Environ())
 }
 
 func Produce(){
