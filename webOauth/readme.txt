@@ -18,3 +18,8 @@ Project name:  gjiangoauth
 client ID: 263631501515-4l08gqagj93r4iqlk1ciuc1hrpbt69i5.apps.googleusercontent.com
 client secrete: oJAYjKrwZlTvLLVSQlWSTKPL
 redirect URI http://localhost:8080/callback
+
+
+How to use gomniauth library:
+https://godoc.org/github.com/stretchr/gomniauth/common#Provider
+https://godoc.org/github.com/stretchr/objx#Map
