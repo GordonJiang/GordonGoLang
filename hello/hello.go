@@ -10,6 +10,9 @@ import (
 	"math"
 	"time"
 	"regexp"
+	"encoding/json"
+	"reflect"
+	"sync"
 )
 
 var (
@@ -96,6 +99,29 @@ func main(){
 	// environment variables
 	fmt.Println("GoPath variable value:", os.Getenv("GOPATH"))
 	fmt.Println("All environment variables", os.Environ())
+
+	// json
+	data := map[string] interface{}{
+		"one": 1,
+		"two": 2,
+	}
+	encoded,_ := json.Marshal(data)
+	var decoded map[string] interface{}
+	json.Unmarshal(encoded, &decoded)
+	fmt.Printf("json encoded: %q", encoded)
+	fmt.Println("decoded value:", decoded)
+	fmt.Println("data:", data)
+	fmt.Println("data == decoded:", reflect.DeepEqual(data, decoded))
+
+	// sync pool
+	val := 0
+	p := sync.Pool
+	/*
+	{	New:func()interface{}{
+		return val
+	}
+	}
+	*/
 }
 
 func Produce(){
