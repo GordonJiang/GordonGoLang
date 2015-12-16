@@ -1,5 +1,5 @@
 owners{
-	notInherit:    true
+	not-inherit:   true
 	approvers:     [billg, steveb]
 	members:       [dugj]
 }

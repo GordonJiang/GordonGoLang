@@ -61,6 +61,10 @@ func StringSliceEqual(a, b []string) bool {
 }
 
 func main() {
+	dir := "abc/qqq/ppp/xyz"
+	dirs := filepath.SplitList(dir)
+	fmt.Println("Dirs: ", dirs)
+
 	ss := strings.Split("", `/`)
 	fmt.Println("size: ", len(ss))
 	fmt.Println(ss[0])
