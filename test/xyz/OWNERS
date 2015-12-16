@@ -1,0 +1,6 @@
+owners{
+	notInherit:    true
+	approvers:     [billg, steveb]
+	members:       [dugj]
+}
+

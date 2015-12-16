@@ -1,6 +1,0 @@
-ownerfile{
-	inherit:        true
-	owners:         [billg, steveb]
-	teammembers:    [dugj]
-}
-

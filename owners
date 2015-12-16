@@ -1,6 +1,0 @@
-ownerfile{
-	inherit:        true
-	owners:         [zhwang, gjiang]
-	teammembers:    [dingjing]
-}
-
