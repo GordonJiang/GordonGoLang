@@ -90,6 +90,22 @@ func changeParam(s string) {
 }
 
 func main() {
+	src, dst := "/home/gjiang/tmp", "/home/gjiang/output"
+
+	var buf bytes.Buffer
+	cont, err := ioutil.ReadFile(src)
+	if err != nil {
+		fmt.Println("Failed to load file:", src)
+		os.Exit(-1)
+	}
+	buf.WriteString("Hash: ")
+	h := sha256.Sum256(cont)
+	buf.WriteString(fmt.Sprintf("%X", h))
+
+	ioutil.WriteFile(dst, buf.Bytes(), 0777)
+
+	return
+
 	fis, err := ioutil.ReadDir("/home/gjiang")
 	if err != nil {
 		os.Exit(2)
@@ -169,25 +185,6 @@ func main() {
 		}
 	}()
 	time.Sleep(10 * time.Second)
-
-	src, dst := "/home/gjiang/tmp", "/home/gjiang/output"
-
-	var buf bytes.Buffer
-	cont, err := ioutil.ReadFile(src)
-	if err != nil {
-		fmt.Println("Failed to load file:", src)
-		os.Exit(-1)
-	}
-	buf.WriteString("Hash: ")
-	h := sha256.Sum256(cont)
-
-	for _, b := range h {
-		buf.WriteString(fmt.Sprintf("%X", b))
-	}
-
-	ioutil.WriteFile(dst, buf.Bytes(), 0777)
-
-	return
 
 	dir := "abc/qqq/ppp/xyz"
 	dirs := filepath.SplitList(dir)
