@@ -1,12 +1,16 @@
 package main
 
 import (
+	"bytes"
+	"crypto/sha256"
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/GordonJiang/GordonGoLang/stringutil"
 	"html/template"
+	"io/ioutil"
 	"math"
+	"math/rand"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -15,6 +19,8 @@ import (
 	"runtime/pprof"
 	"strings"
 	"time"
+
+	"github.com/GordonJiang/GordonGoLang/stringutil"
 	//	"sync"
 )
 
@@ -47,6 +53,24 @@ type s2 struct {
 	files []string
 }
 
+type Privilege int32
+
+const (
+	Role_Reader Privilege = 0
+	Role_Admin  Privilege = 1
+	Role_Dev    Privilege = 2
+)
+
+type Person struct {
+	name  string
+	email string
+}
+
+type Admin struct {
+	admPrivileges []Privilege
+	*Person
+}
+
 // Test if two sorted string slice are equal.
 func StringSliceEqual(a, b []string) bool {
 	if len(a) != len(b) {
@@ -60,7 +84,111 @@ func StringSliceEqual(a, b []string) bool {
 	return true
 }
 
+func changeParam(s string) {
+	fmt.Println("In changeParam: ", s)
+	s = "New value"
+}
+
 func main() {
+	fis, err := ioutil.ReadDir("/home/gjiang")
+	if err != nil {
+		os.Exit(2)
+	}
+	for _, fi := range fis {
+		fmt.Printf("%s. %v\n", fi.Name(), fi.IsDir())
+	}
+
+	return
+
+	notify := make(chan int)
+	go func() {
+		for {
+			time.Sleep(time.Second * 20)
+			notify <- 1
+		}
+	}()
+
+	notify2 := make(chan int)
+	go func() {
+		for {
+			time.Sleep(time.Second * 20)
+			notify2 <- 1
+		}
+	}()
+
+	timeout := time.After(time.Second * 15)
+	for {
+		select {
+		case r := <-notify:
+			fmt.Println("Notified by job1", r)
+			return
+		case r := <-notify2:
+			fmt.Println("Notified by job2", r)
+			return
+		case <-timeout:
+			fmt.Println("Timed out!", time.Now())
+			os.Exit(1)
+		}
+	}
+
+	return
+
+	ch := make(chan int)
+
+	go func(out chan<- int) {
+		for i := 0; i < 100; i++ {
+			out <- rand.Int()
+		}
+		close(out)
+	}(ch)
+
+	// goroutine receives data and keep printing out
+	go func(in <-chan int) {
+		for x := range in {
+			fmt.Println("Received:", x)
+		}
+	}(ch)
+
+	time.Sleep(10 * time.Second)
+
+	first := func() *http.Response {
+		ch := make(chan *http.Response, 3)
+		go func() { resp, _ := http.Get("http://www.microsoft.com"); ch <- resp }()
+		go func() { resp, _ := http.Get("http://www.google.com"); ch <- resp }()
+		go func() { resp, _ := http.Get("http://www.facebook.com"); ch <- resp }()
+		return <-ch
+	}()
+
+	fmt.Println("The first caught web is: ", first.Request)
+	return
+
+	// go routine receives data and keep printing out
+	go func() {
+		for {
+			fmt.Println("Received:", <-ch)
+		}
+	}()
+	time.Sleep(10 * time.Second)
+
+	src, dst := "/home/gjiang/tmp", "/home/gjiang/output"
+
+	var buf bytes.Buffer
+	cont, err := ioutil.ReadFile(src)
+	if err != nil {
+		fmt.Println("Failed to load file:", src)
+		os.Exit(-1)
+	}
+	buf.WriteString("Hash: ")
+	h := sha256.Sum256(cont)
+
+	for _, b := range h {
+		buf.WriteString(fmt.Sprintf("%X", b))
+	}
+
+	ioutil.WriteFile(dst, buf.Bytes(), 0777)
+
+	return
+
 	dir := "abc/qqq/ppp/xyz"
 	dirs := filepath.SplitList(dir)
 	fmt.Println("Dirs: ", dirs)
